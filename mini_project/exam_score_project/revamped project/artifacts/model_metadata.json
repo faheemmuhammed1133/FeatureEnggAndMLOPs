@@ -1,0 +1,96 @@
+{
+  "model_name": "balanced_random_forest",
+  "model_version": "1.0.0",
+  "trained_at_utc": "2026-09-25T18:15:03.966207+00:00",
+  "target_column": "Revenue",
+  "positive_label": true,
+  "feature_columns": [
+    "Administrative",
+    "Administrative_Duration",
+    "Informational",
+    "Informational_Duration",
+    "ProductRelated",
+    "ProductRelated_Duration",
+    "BounceRates",
+    "ExitRates",
+    "SpecialDay",
+    "Month",
+    "OperatingSystems",
+    "Browser",
+    "Region",
+    "TrafficType",
+    "VisitorType",
+    "Weekend"
+  ],
+  "excluded_columns": [
+    "Revenue",
+    "PageValues"
+  ],
+  "excluded_feature_reason": {
+    "PageValues": "Potential target proxy; excluded from the deployable feature contract.",
+    "Revenue": "Target label, not an input feature."
+  },
+  "selection_metric": "validation_average_precision",
+  "decision_threshold_selection": "validation_max_f1",
+  "decision_threshold": 0.3191460816071113,
+  "rows": 12330,
+  "positive_rate": 0.15474452554744525,
+  "exact_duplicate_rows_kept": 125,
+  "split_rows": {
+    "train": 7398,
+    "validation": 2466,
+    "test": 2466
+  },
+  "dummy_validation_metrics": {
+    "average_precision": 0.15450121654501217,
+    "roc_auc": 0.5,
+    "threshold": 0.5,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "balanced_accuracy": 0.5,
+    "accuracy": 0.8454987834549879
+  },
+  "candidate_validation_metrics": {
+    "balanced_logistic_regression": {
+      "average_precision": 0.32177923536006736,
+      "roc_auc": 0.7435248651472524,
+      "threshold": 0.5,
+      "precision": 0.2636861313868613,
+      "recall": 0.7585301837270341,
+      "f1": 0.3913337846987136,
+      "balanced_accuracy": 0.6857399120074019,
+      "accuracy": 0.6354420113544201
+    },
+    "balanced_random_forest": {
+      "average_precision": 0.3430501283974736,
+      "roc_auc": 0.76394569383863,
+      "threshold": 0.5,
+      "precision": 0.4092827004219409,
+      "recall": 0.2545931758530184,
+      "f1": 0.313915857605178,
+      "balanced_accuracy": 0.5937234464396987,
+      "accuracy": 0.8280616382806164
+    }
+  },
+  "selected_validation_metrics": {
+    "average_precision": 0.3430501283974736,
+    "roc_auc": 0.76394569383863,
+    "threshold": 0.3191460816071113,
+    "precision": 0.30359355638166047,
+    "recall": 0.6430446194225722,
+    "f1": 0.41245791245791247,
+    "balanced_accuracy": 0.6867501274570895,
+    "accuracy": 0.7169505271695052
+  },
+  "final_test_metrics": {
+    "average_precision": 0.36314983787374017,
+    "roc_auc": 0.7650498437358684,
+    "threshold": 0.3191460816071113,
+    "precision": 0.30164765525982257,
+    "recall": 0.6230366492146597,
+    "f1": 0.40649017933390263,
+    "balanced_accuracy": 0.6793206278702857,
+    "accuracy": 0.7181670721816708
+  }
+}
