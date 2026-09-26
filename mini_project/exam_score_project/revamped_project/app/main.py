@@ -46,7 +46,7 @@ app = FastAPI(
         "may act as a target proxy. This educational model is not a real-time intervention "
         "system; see the project README for scope and data limitations."
     ),
-    version="1.0.0",
+    version="3.0.0",
     lifespan=lifespan,
 )
 
