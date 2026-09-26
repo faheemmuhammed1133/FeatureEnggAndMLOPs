@@ -9,38 +9,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-TARGET_COLUMN = "Revenue"
-
-# PageValues is deliberately omitted from the model contract. It is a Google Analytics
-# page-value metric that can encode information closely tied to the transaction outcome.
-# See README.md and the notebook for the leakage discussion.
-NUMERIC_COLUMNS = [
-    "Administrative",
-    "Administrative_Duration",
-    "Informational",
-    "Informational_Duration",
-    "ProductRelated",
-    "ProductRelated_Duration",
-    "BounceRates",
-    "ExitRates",
-    "SpecialDay",
-]
-
-# These integer columns are identifiers/codes for categories, not measurements with a
-# meaningful numeric distance. One-hot encoding avoids treating (for example) browser 8 as
-# four times browser 2.
-CATEGORICAL_COLUMNS = [
-    "Month",
-    "OperatingSystems",
-    "Browser",
-    "Region",
-    "TrafficType",
-    "VisitorType",
-    "Weekend",
-]
-
-FEATURE_COLUMNS = NUMERIC_COLUMNS + CATEGORICAL_COLUMNS
-EXCLUDED_COLUMNS = ["Revenue", "PageValues"]
+from src.schema import (
+    CATEGORICAL_COLUMNS,
+    EXCLUDED_COLUMNS,
+    FEATURE_COLUMNS,
+    NUMERIC_COLUMNS,
+    TARGET_COLUMN,
+)
 
 
 def build_preprocessor(*, scale_numeric: bool = True) -> ColumnTransformer:

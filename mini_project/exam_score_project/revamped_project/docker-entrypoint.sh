@@ -3,6 +3,7 @@ set -uo pipefail
 
 API_PID=""
 UI_PID=""
+UI_PORT="${PORT:-8501}"
 
 stop_children() {
     if [[ -n "$API_PID" ]]; then kill "$API_PID" 2>/dev/null || true; fi
@@ -39,8 +40,8 @@ if [[ "$API_READY" -ne 1 ]]; then
     exit 1
 fi
 
-echo "[entrypoint] starting Streamlit on port 8501"
-streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 8501 &
+echo "[entrypoint] starting Streamlit on port ${UI_PORT}"
+streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port "${UI_PORT}" &
 UI_PID=$!
 
 # Exit when either service exits, then shut down its sibling. `wait -n` can return a

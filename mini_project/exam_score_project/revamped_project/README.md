@@ -38,9 +38,10 @@ scaling, and category encodings are fitted on training data only.
 ## Project layout
 
 ```text
-revamped project/
+revamped_project/
 ├── data/raw/online_shoppers_intention.csv  # supplied dataset copy
 ├── notebooks/online_shoppers_intention.ipynb
+├── src/schema.py                         # shared, lightweight feature contract
 ├── src/shopper_pipeline.py                 # feature contract and candidate pipelines
 ├── src/training.py                         # split, selection, threshold, persistence
 ├── train.py                                # reproducible command-line training entry point
@@ -59,7 +60,7 @@ The project is under the current workspace and the existing environment is at
 `/Users/muhammedfaheem/Desktop/AI_DS/.venv`. From a terminal:
 
 ```bash
-cd "/Users/muhammedfaheem/Desktop/AI_DS/Feature Engineering/repo/mini_project/exam_score_project/revamped project"
+cd "/Users/muhammedfaheem/Desktop/AI_DS/Feature Engineering/repo/mini_project/exam_score_project/revamped_project"
 source "/Users/muhammedfaheem/Desktop/AI_DS/.venv/bin/activate"
 ```
 
@@ -97,7 +98,7 @@ recorded in model metadata as a limitation to revisit when better identifiers ar
 
 The notebook is saved under `notebooks/online_shoppers_intention.ipynb` and reads the CSV
 through a path relative to the project, so it does not depend on a machine-specific absolute
-path. From Jupyter's root, navigate to `Feature Engineering/repo/mini_project/exam_score_project/revamped project/notebooks/` and open
+path. From Jupyter's root, navigate to `Feature Engineering/repo/mini_project/exam_score_project/revamped_project/notebooks/` and open
 `online_shoppers_intention.ipynb`. Use the Python kernel associated with the parent `.venv`.
 
 You can also start Jupyter from the project directory:
@@ -157,6 +158,28 @@ decision threshold, and model version. The threshold is a teaching default selec
 maximize validation F1. A real business should select it based on the cost of false alarms,
 missed purchases, and the number of sessions it can act on.
 
+## Score a CSV batch
+
+In the Streamlit app, open **Batch CSV upload**, download the template, add one session per
+row, and upload it. The file needs the 16 feature columns used by the model; header matching
+ignores capitalization and surrounding spaces. Blank feature cells are imputed by the
+training-fitted preprocessing pipeline. Other columns can be included for identifiers, but
+they are not sent to the model. `Revenue` and `PageValues` are ignored and removed from the
+scored export.
+
+The upload screen shows progress while it sends bounded groups of rows to the
+`POST /predict/batch` endpoint, then presents separate tables for **High purchase
+likelihood**, **Needs a nudge**, and **Low purchase likelihood**. It also provides a table of
+all scored rows and a downloadable CSV. The nudge floor defaults to the model's
+validation-selected classification threshold; the high-likelihood cutoff defaults to 65%.
+Both are editable triage settings, not proven marketing policies. The API accepts up to 500
+sessions per request, and the UI splits larger uploads into those chunks.
+
+Each row represents a summarized session. The supplied dataset does not identify unique
+customers; include your own session or customer ID column to link scored rows to your
+records. The ID is shown in results but is excluded from model inputs. Avoid uploading
+personally identifying or otherwise sensitive data to a public demo service.
+
 ## Build and run the one Docker image
 
 After training has created the model and metadata:
@@ -168,7 +191,36 @@ docker run --rm -p 8000:8000 -p 8501:8501 online-shopper-intention:1.0
 
 Open `http://localhost:8501` for the UI and `http://localhost:8000/docs` for FastAPI.
 The container entrypoint starts the API, waits for its model-backed health endpoint, then
-starts Streamlit. Docker runs as a non-root user.
+starts Streamlit. Locally Streamlit uses port 8501 by default; the entrypoint uses Render's
+`PORT` environment variable when one is provided. Docker runs as a non-root user.
+
+## Deploy on Render's free web service
+
+The project can deploy from this GitHub monorepo using its Dockerfile:
+
+1. In Render, choose **New → Web Service**, connect GitHub, and select
+   `faheemmuhammed1133/FeatureEnggAndMLOPs` on branch `main`.
+2. Set **Root Directory** to
+   `mini_project/exam_score_project/revamped_project` and **Runtime** to `Docker`.
+   Use `./Dockerfile` as the Dockerfile path if Render asks for it. The Docker build context
+   should be this project directory.
+3. Choose the **Free** instance type. Leave the Docker command/start command and `API_URL`
+   unset. The entrypoint starts both services; Streamlit calls FastAPI at
+   `http://localhost:8000` inside the same container.
+4. Deploy and open the `onrender.com` URL shown in the service dashboard.
+
+The public Render port comes from Render's `PORT` variable; the entrypoint honors it for
+Streamlit while keeping FastAPI on its internal port 8000. The UI is public, while the
+FastAPI `/docs` endpoint is not separately exposed in this single-service layout. To make
+the API independently public, deploy it as a separate web service and configure the UI to
+use that service's URL.
+
+Render's free web services have 512 MB RAM, spin down after 15 minutes without traffic, and
+can take about a minute to start again. They have ephemeral filesystems; this project reads
+the model bundled in the image and does not need to persist uploads. The combined app may
+be memory-constrained on the free plan, so check the service logs if it restarts. See
+[Render's free-instance limits](https://render.com/docs/free) and
+[Docker deployment settings](https://render.com/docs/docker).
 
 ## Data source and attribution
 

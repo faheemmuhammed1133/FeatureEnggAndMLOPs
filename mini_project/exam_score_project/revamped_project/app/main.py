@@ -8,9 +8,12 @@ from pathlib import Path
 from typing import Literal
 
 import joblib
+import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
+
+from src.schema import FEATURE_COLUMNS
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MODEL_PATH = PROJECT_ROOT / "models" / "shopper_purchase_pipeline.joblib"
@@ -49,24 +52,24 @@ app = FastAPI(
 
 
 class ShopperSessionInput(BaseModel):
-    """Session inputs accepted by the deployed model; no target or PageValues field."""
+    """Session inputs; blank CSV cells are passed to the pipeline imputers."""
 
-    Administrative: int = Field(ge=0, description="Administrative pages viewed")
-    Administrative_Duration: float = Field(ge=0, description="Time on administrative pages")
-    Informational: int = Field(ge=0, description="Informational pages viewed")
-    Informational_Duration: float = Field(ge=0, description="Time on informational pages")
-    ProductRelated: int = Field(ge=0, description="Product-related pages viewed")
-    ProductRelated_Duration: float = Field(ge=0, description="Time on product-related pages")
-    BounceRates: float = Field(ge=0, le=1)
-    ExitRates: float = Field(ge=0, le=1)
-    SpecialDay: float = Field(ge=0, le=1)
-    Month: str = Field(min_length=1, max_length=12)
-    OperatingSystems: int = Field(ge=1)
-    Browser: int = Field(ge=1)
-    Region: int = Field(ge=1)
-    TrafficType: int = Field(ge=1)
-    VisitorType: Literal["Returning_Visitor", "New_Visitor", "Other"]
-    Weekend: bool
+    Administrative: int | None = Field(default=None, ge=0, description="Administrative pages viewed")
+    Administrative_Duration: float | None = Field(default=None, ge=0, description="Time on administrative pages")
+    Informational: int | None = Field(default=None, ge=0, description="Informational pages viewed")
+    Informational_Duration: float | None = Field(default=None, ge=0, description="Time on informational pages")
+    ProductRelated: int | None = Field(default=None, ge=0, description="Product-related pages viewed")
+    ProductRelated_Duration: float | None = Field(default=None, ge=0, description="Time on product-related pages")
+    BounceRates: float | None = Field(default=None, ge=0, le=1)
+    ExitRates: float | None = Field(default=None, ge=0, le=1)
+    SpecialDay: float | None = Field(default=None, ge=0, le=1)
+    Month: str | None = Field(default=None, min_length=1, max_length=12)
+    OperatingSystems: int | None = Field(default=None, ge=1)
+    Browser: int | None = Field(default=None, ge=1)
+    Region: int | None = Field(default=None, ge=1)
+    TrafficType: int | None = Field(default=None, ge=1)
+    VisitorType: Literal["Returning_Visitor", "New_Visitor", "Other"] | None = None
+    Weekend: bool | None = None
 
     model_config = ConfigDict(
         extra="forbid",
@@ -100,6 +103,16 @@ class PredictionOutput(BaseModel):
     model_version: str
 
 
+class BatchPredictionInput(BaseModel):
+    """One bounded chunk of sessions for vectorized batch inference."""
+
+    sessions: list[ShopperSessionInput] = Field(min_length=1, max_length=500)
+
+
+class BatchPredictionOutput(BaseModel):
+    predictions: list[PredictionOutput]
+
+
 @app.get("/health")
 def health():
     return {
@@ -127,7 +140,8 @@ def predict(session: ShopperSessionInput):
     if pipeline is None:
         raise HTTPException(status_code=503, detail="Model is not loaded yet.")
 
-    input_frame = pd.DataFrame([session.model_dump()])
+    input_frame = pd.DataFrame([session.model_dump()], columns=FEATURE_COLUMNS)
+    input_frame = input_frame.replace({None: np.nan})
     probability = float(pipeline.predict_proba(input_frame)[0, 1])
     threshold = float(model_metadata["decision_threshold"])
     return PredictionOutput(
@@ -135,4 +149,30 @@ def predict(session: ShopperSessionInput):
         predicted_purchase=probability >= threshold,
         decision_threshold=round(threshold, 4),
         model_version=str(model_metadata.get("model_version", "unknown")),
+    )
+
+
+@app.post("/predict/batch", response_model=BatchPredictionOutput)
+def predict_batch(batch: BatchPredictionInput):
+    """Score a bounded batch in one vectorized model call."""
+    if pipeline is None:
+        raise HTTPException(status_code=503, detail="Model is not loaded yet.")
+
+    input_frame = pd.DataFrame(
+        [session.model_dump() for session in batch.sessions],
+        columns=FEATURE_COLUMNS,
+    ).replace({None: np.nan})
+    probabilities = pipeline.predict_proba(input_frame)[:, 1]
+    threshold = float(model_metadata["decision_threshold"])
+    version = str(model_metadata.get("model_version", "unknown"))
+    return BatchPredictionOutput(
+        predictions=[
+            PredictionOutput(
+                purchase_probability=round(float(probability), 4),
+                predicted_purchase=bool(probability >= threshold),
+                decision_threshold=round(threshold, 4),
+                model_version=version,
+            )
+            for probability in probabilities
+        ]
     )
