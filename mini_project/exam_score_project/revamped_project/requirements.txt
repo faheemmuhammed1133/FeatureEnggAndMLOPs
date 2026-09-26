@@ -1,0 +1,20 @@
+# Core data science stack (aligned to the parent .venv where available)
+numpy==2.5.3
+pandas==3.0.5
+scikit-learn==1.9.1
+matplotlib==3.11.2
+joblib==1.6.0
+
+# API
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+pydantic==2.13.5
+
+# UI and HTTP client
+streamlit==1.64.0
+requests==2.34.2
+
+# Notebook support
+notebook==7.6.2
+nbconvert==7.17.1
+ipykernel>=6,<8
