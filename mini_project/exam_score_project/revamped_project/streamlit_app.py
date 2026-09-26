@@ -434,10 +434,9 @@ st.set_page_config(
     page_icon="🛍️",
     layout="wide",
 )
-st.title("🛍️ Online Shopper Purchase Intention")
+st.title("🛍️ Online Shopper Classifier")
 st.caption(
-    "Educational session-level classifier. The model estimates the Revenue outcome from "
-    "summarized session data; it does not claim to predict intent early in a live session."
+    "Analyze real online shopping sessions and predict purchase likelihood using a trained machine learning model. Enter a session manually or upload a CSV to classify shoppers into High Purchase Likelihood, Potential Customer, or Low Purchase Likelihood based on their observed browsing behavior."
 )
 
 model_threshold = 0.319
